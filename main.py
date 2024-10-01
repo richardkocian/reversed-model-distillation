@@ -71,12 +71,19 @@ for epoch in range(epochs):
 correct = 0
 total = 0
 
+model.eval()
 # Deaktivace gradientů pro testování (abychom šetřili paměť)
 with torch.no_grad():
     for images, labels in test_loader:
         outputs = model(images)
         _, predicted = torch.max(outputs, 1)
         total += labels.size(0)
+        # for i in range(len(predicted)):
+        #     if predicted[i] != labels[i]:
+        #         # Pokud předpověď není shodná se skutečným labelem, zobraz obrázek
+        #         plt.imshow(images[i].squeeze(), cmap='gray')
+        #         plt.title(f'Predicted: {predicted[i].item()}, Actual: {labels[i].item()}')
+        #         plt.show()
         correct += (predicted == labels).sum().item()
 
 print(f"Accuracy: {100 * correct / total:.2f}%")
