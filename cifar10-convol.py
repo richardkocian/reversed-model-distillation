@@ -14,8 +14,8 @@ transform = transforms.Compose([transforms.ToTensor(), transforms.Normalize((0.5
 train_dataset = datasets.CIFAR10(root='./data', train=True, download=True, transform=transform)
 test_dataset = datasets.CIFAR10(root='./data', train=False, download=True, transform=transform)
 
-train_loader = DataLoader(dataset=train_dataset, batch_size=64, shuffle=True)
-test_loader = DataLoader(dataset=test_dataset, batch_size=64, shuffle=True)
+train_loader = DataLoader(dataset=train_dataset, batch_size=256, shuffle=True, num_workers=12, pin_memory=True)
+test_loader = DataLoader(dataset=test_dataset, batch_size=256, shuffle=False, num_workers=12, pin_memory=True)
 
 classes = ('plane', 'car', 'bird', 'cat', 'deer', 'dog', 'frog', 'horse', 'ship', 'truck')
 
@@ -48,8 +48,10 @@ optimizer = optim.SGD(model.parameters(), lr=0.001, momentum=0.9)
 # TODO momentum=0.9 znamená, že se při aktualizaci váh bude brát v úvahu z 90 % směr předchozí aktualizace. To může pomoci váhy posouvat správným směrem rychleji a bez zbytečných oscilací.
 
 epochs = 20
-
+print(next(model.parameters()).device)
 for epoch in range(epochs):
+    running_loss = 0.0
+    print(f"[{epoch + 1}] ztráta: {running_loss / 500:.3f}")
     running_loss = 0.0
     for i, data in enumerate(train_loader, 0):
         # Získání vstupů; data je seznam [vstupy, štítky]
@@ -74,9 +76,9 @@ for epoch in range(epochs):
 
         # Tisknutí statistiky o ztrátě
         running_loss += loss.item()
-        if i % 500 == 499:  # Každých 500 batchů
-            print(f"[{epoch + 1}, {i + 1}] ztráta: {running_loss / 500:.3f}")
-            running_loss = 0.0
+        # if i % 50 == 49:  # Každých 500 batchů
+        #     print(f"[{epoch + 1}, {i + 1}] ztráta: {running_loss / 500:.3f}")
+        #     running_loss = 0.0
 
 print('Trénování dokončeno')
 
@@ -87,7 +89,7 @@ count = 10
 with torch.no_grad():  # Deaktivujeme výpočet gradientů, abychom šetřili paměť
     for data in test_loader:
         images, labels = data
-        images, labels = images.to(device), labels.to(device)
+        images, labels = images.to(device, non_blocking=True), labels.to(device, non_blocking=True)
         outputs = model(images)
         _, predicted = torch.max(outputs, 1)
         total += labels.size(0)
@@ -111,7 +113,7 @@ class_total = list(0. for i in range(10))
 with torch.no_grad():
     for data in test_loader:
         images, labels = data
-        images, labels = images.to(device), labels.to(device)
+        images, labels = images.to(device, non_blocking=True), labels.to(device, non_blocking=True)
         outputs = model(images)
         _, predicted = torch.max(outputs, 1)
         c = (predicted == labels).squeeze()
