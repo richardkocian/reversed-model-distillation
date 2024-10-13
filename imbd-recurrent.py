@@ -6,6 +6,8 @@ from torchtext.datasets import IMDB
 from torchtext.data.utils import get_tokenizer
 from torch.nn.utils.rnn import pad_sequence
 
+torch.backends.cudnn.benchmark = True
+
 # Nastavení zařízení
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -18,8 +20,9 @@ tokenizer = get_tokenizer('basic_english')
 # Počítání výskytů slov a vytvoření slovníku
 from collections import Counter
 
+print(f"Number of training samples: {len(list(train_data))}")
+print(f"Number of test samples: {len(list(test_data))}")
 counter = Counter()
-
 for _, line in train_data:
     counter.update(tokenizer(line))
 
@@ -63,14 +66,14 @@ def collate_batch(batch):
     labels = torch.tensor(labels, dtype=torch.float32)
 
     # Převádíme texty na tensory a přidáváme padding
-    texts = [torch.tensor(t, dtype=torch.long) for t in texts]
+    texts = [t.clone().detach().long() for t in texts]
     texts = pad_sequence(texts, batch_first=True, padding_value=vocab[PAD_TOKEN])  # Padding na hodnotu pro PAD_TOKEN
     return labels, texts
 
 
 # DataLoadery pro trénink a testování
-train_loader = DataLoader(train_dataset, batch_size=8, shuffle=True, collate_fn=collate_batch)
-test_loader = DataLoader(test_dataset, batch_size=8, shuffle=False, collate_fn=collate_batch)
+train_loader = DataLoader(train_dataset, batch_size=128, shuffle=True, collate_fn=collate_batch, pin_memory=True, num_workers=12)
+test_loader = DataLoader(test_dataset, batch_size=128, shuffle=False, collate_fn=collate_batch, pin_memory=True, num_workers=12)
 
 
 # Definice RNN modelu
@@ -131,6 +134,8 @@ for epoch in range(num_epochs):
 # Vyhodnocení modelu
 model.eval()
 correct, total = 0, 0
+correctly_classified_samples = []
+wrongly_classified_samples = []
 
 with torch.no_grad():
     for labels, texts in test_loader:
@@ -141,4 +146,38 @@ with torch.no_grad():
         correct += (predictions == labels).sum().item()
         total += labels.size(0)
 
-print(f'Accuracy: {correct / total:.2f}')
+        # Uložení správně klasifikovaných vzorků
+        for i in range(len(predictions)):
+            if predictions[i] == labels[i]:  # Kontrola, zda byla předpověď správná
+                # Přidání textu a příslušného štítku do seznamu
+                correctly_classified_samples.append((texts[i].cpu(), labels[i].cpu()))
+            else:
+                wrongly_classified_samples.append((texts[i].cpu(), labels[i].cpu()))
+
+
+        print(f"correct = {correct}")
+        print(f"total = {total}")
+        print(f'Accuracy: {correct / total}')
+
+print(f'Accuracy: {correct / total}')
+
+i = 0
+print("CORRECT :)")
+for text_tensor, label_tensor in correctly_classified_samples:
+    # Převod tokenů zpět na text
+    if i <= 5:
+        text = ' '.join([list(vocab.keys())[list(vocab.values()).index(token.item())] for token in text_tensor if token.item() not in [0, 1]])  # Ignorování PAD a UNK tokenů
+        label = "Positive" if label_tensor.item() == 1 else "Negative"
+        print(f'Label: {label} | Text: {text}')
+        i = i + 1
+
+i = 0
+print("WRONG :(")
+for text_tensor, label_tensor in wrongly_classified_samples:
+    # Převod tokenů zpět na text
+    if i <= 5:
+        text = ' '.join([list(vocab.keys())[list(vocab.values()).index(token.item())] for token in text_tensor if token.item() not in [0, 1]])  # Ignorování PAD a UNK tokenů
+        label = "Positive" if label_tensor.item() == 1 else "Negative"
+        correct_label = "Negative" if label_tensor.item() == 1 else "Positive"
+        print(f'Label was: {label} but should be {correct_label} | Text: {text}')
+        i = i + 1
