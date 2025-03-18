@@ -64,13 +64,13 @@ def train_student(model, optimizer, criterion):
 
 
 for i in range(num_students):
-    student_model = models.student_cifar.StudentModelCIFAR().to(device)  # Pick teacher model
-    teacher_optimizer = optim.Adam(student_model.parameters(), lr=config.LEARNING_RATE)
+    student_model = models.student_cifar.StudentModelCIFAR().to(device)  # Pick student model
+    student_optimizer = optim.Adam(student_model.parameters(), lr=config.LEARNING_RATE)
     criterion = nn.CrossEntropyLoss()
 
     print(f"Training Student Model {i + 1}...")
-    training_losses = train_student(student_model, teacher_optimizer, criterion)
-    print(f"Teacher Model {i + 1} testing:")
+    training_losses = train_student(student_model, student_optimizer, criterion)
+    print(f"Student Model {i + 1} testing:")
     accuracy = test_model(student_model, test_loader, device)
 
     save_dir = f"{outputs_path}/models/student_model_cifar_{i + 1}"
