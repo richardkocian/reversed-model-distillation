@@ -5,10 +5,23 @@ import torch.nn as nn
 import config
 import os
 import models.teacher_cifar
+import argparse
 
 from torch.utils.data import DataLoader
 from datasets.cifar10 import get_cifar10
 from test_model import test_model
+
+parser = argparse.ArgumentParser(description='Train Teacher Models')
+parser.add_argument('--datasets-path', type=str, required=True, help='Path to the datasets folder')
+parser.add_argument('--output', type=str, required=True, help='Path to the outputs folder')
+parser.add_argument('--batch-size', type=int, default=64, help='Batch size for training (default: 64)')
+parser.add_argument('--num-workers', type=int, default=4, help='Number of worker threads for data loading (default: 4)')
+
+args = parser.parse_args()
+datasets_path = args.datasets_path
+outputs_path = args.output
+batch_size = args.batch_size
+num_workers = args.num_workers
 
 device = torch.device("cuda" if config.USE_CUDA and torch.cuda.is_available() else "cpu")
 
@@ -20,10 +33,10 @@ num_teachers = 10
 
 torch.backends.cudnn.benchmark = True
 
-train_dataset, test_dataset = get_cifar10()
-train_loader = DataLoader(train_dataset, batch_size=config.BATCH_SIZE, shuffle=True, num_workers=config.NUM_WORKERS,
+train_dataset, test_dataset = get_cifar10(datasets_path)
+train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, num_workers=num_workers,
                           pin_memory=config.PIN_MEMORY, persistent_workers=config.PERSISTENT_WORKERS)
-test_loader = DataLoader(test_dataset, batch_size=config.BATCH_SIZE, shuffle=False, num_workers=config.NUM_WORKERS,
+test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False, num_workers=num_workers,
                          pin_memory=config.PIN_MEMORY, persistent_workers=config.PERSISTENT_WORKERS)
 
 
@@ -58,11 +71,11 @@ for i in range(num_teachers):
     print(f"Training Teacher Model {i + 1}...")
     training_losses = train_teacher(teacher_model, teacher_optimizer, criterion)
     print(f"Teacher Model {i + 1} testing:")
-    accuracy = test_model(teacher_model, test_dataset, device)
+    accuracy = test_model(teacher_model, test_loader, device)
 
-    save_dir = f"models/teacher_model_cifar_{i + 1}"
+    save_dir = f"{outputs_path}/models/teacher_model_cifar_{i + 1}"
     print(f"Saving Teacher Model {i + 1} to {save_dir}...")
     os.makedirs(save_dir, exist_ok=True)
-    np.savetxt("training_losses.txt", training_losses)
-    np.savetxt("accuracy.txt", accuracy)
+    np.savetxt(f"{save_dir}/training_losses.txt", training_losses)
+    np.savetxt(f"{save_dir}/accuracy.txt", [accuracy], fmt="%.2f")
     torch.save(teacher_model, os.path.join(save_dir, f"teacher_model.pth"))
