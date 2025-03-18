@@ -65,6 +65,8 @@ def train_student(model, optimizer, criterion):
 
 for i in range(num_students):
     student_model = models.student_cifar.StudentModelCIFAR().to(device)  # Pick student model
+    if torch.cuda.device_count() > 1:
+        student_model = nn.DataParallel(student_model)
     student_optimizer = optim.Adam(student_model.parameters(), lr=config.LEARNING_RATE)
     criterion = nn.CrossEntropyLoss()
 
