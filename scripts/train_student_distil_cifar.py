@@ -110,4 +110,3 @@ for run in range(runs):
         os.makedirs(save_dir, exist_ok=True)
         np.savetxt(f"{save_dir}/training_losses.txt", training_losses)
         np.savetxt(f"{save_dir}/accuracy.txt", [accuracy], fmt="%.2f")
-        torch.save(student_model, os.path.join(save_dir, f"student_model.pth"))
