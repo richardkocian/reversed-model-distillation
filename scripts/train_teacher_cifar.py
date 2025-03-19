@@ -64,7 +64,7 @@ def train_teacher(model, optimizer, criterion):
 
 
 for i in range(num_teachers):
-    teacher_model = models.teacher_cifar.TeacherModel1().to(device)  # Pick teacher model
+    teacher_model = models.teacher_cifar.TeacherModelTiny().to(device)  # Pick teacher model
     teacher_optimizer = optim.Adam(teacher_model.parameters(), lr=config.LEARNING_RATE)
     criterion = nn.CrossEntropyLoss()
 
@@ -73,7 +73,7 @@ for i in range(num_teachers):
     print(f"Teacher Model {i + 1} testing:")
     accuracy = test_model(teacher_model, test_loader, device)
 
-    save_dir = f"{outputs_path}/models/teacher_model_cifar_{i + 1}"
+    save_dir = f"{outputs_path}/teacher_model_{i + 1}"
     print(f"Saving Teacher Model {i + 1} to {save_dir}...")
     os.makedirs(save_dir, exist_ok=True)
     np.savetxt(f"{save_dir}/training_losses.txt", training_losses)
