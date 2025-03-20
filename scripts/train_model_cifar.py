@@ -60,6 +60,8 @@ def train_model(train_loader, model, optimizer, criterion):
 
 
 for run, seed in enumerate(seeds):
+    print(f"Training Model {run + 1}/{len(seeds)} (seed: {seed})...")
+    
     set_seed(seed)
     train_loader, test_loader = get_cifar10_loaders(datasets_path=datasets_path, batch_size=batch_size,
                                                     num_workers=num_workers)
@@ -77,7 +79,6 @@ for run, seed in enumerate(seeds):
     student_optimizer = optim.Adam(model.parameters(), lr=config.LEARNING_RATE)
     criterion = nn.CrossEntropyLoss()
 
-    print(f"Training Model {run + 1}/{len(seeds)} (seed: {seed})...")
     training_losses = train_model(train_loader, model, student_optimizer, criterion)
     accuracy = test_model(model, test_loader, device)
 
