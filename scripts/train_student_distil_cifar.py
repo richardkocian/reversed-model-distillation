@@ -20,7 +20,7 @@ parser.add_argument('--teacher-path', type=str, required=True, help='Path to tea
 parser.add_argument('--output', type=str, required=True, help='Path to the outputs folder')
 parser.add_argument('--batch-size', type=int, default=64, help='Batch size for training (default: 64)')
 parser.add_argument('--num-workers', type=int, default=4, help='Number of worker threads for data loading (default: 4)')
-parser.add_argument('--seeds-path', type=str, required=True, help='Path to the seeds list txt file')
+parser.add_argument('--seeds-file', type=str, required=True, help='Path to the seeds list txt file')
 parser.add_argument('--alpha', type=float, default=0.6, help='Alpha parameter (default: 0.6)')
 
 args = parser.parse_args()
