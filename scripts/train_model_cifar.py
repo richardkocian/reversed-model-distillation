@@ -58,9 +58,6 @@ def train_model(train_loader, model, optimizer, criterion):
 
 for run, seed in enumerate(seeds):
     set_seed(seed)
-    device = torch.device("cuda" if config.USE_CUDA and torch.cuda.is_available() else "cpu")
-
-    print(f"Using device: {device}")
     train_loader, test_loader = get_cifar10_loaders(datasets_path=datasets_path, batch_size=batch_size,
                                                     num_workers=num_workers)
 
