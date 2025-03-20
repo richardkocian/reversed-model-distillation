@@ -1,9 +1,9 @@
 import torch.nn as nn
 import torch.nn.functional as F
 
-class TeacherModel1(nn.Module):
+class TeacherModelMedium(nn.Module):
     def __init__(self, input_size=32): # input_size = 32 for CIFAR-10
-        super(TeacherModel1, self).__init__()
+        super(TeacherModelMedium, self).__init__()
         self.conv1 = nn.Conv2d(3, 16, kernel_size=3, padding=1)
         self.pool = nn.MaxPool2d(2, 2)
 

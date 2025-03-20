@@ -1,9 +1,9 @@
 import torch.nn as nn
 import torch.nn.functional as F
 
-class StudentModelCIFAR(nn.Module):
+class StudentModel(nn.Module):
     def __init__(self, input_size=32):  # input_size=32 for CIFAR-10
-        super(StudentModelCIFAR, self).__init__()
+        super(StudentModel, self).__init__()
         self.conv1 = nn.Conv2d(3, 64, kernel_size=3, padding=1)
         self.conv2 = nn.Conv2d(64, 128, kernel_size=3, padding=1)
         self.conv3 = nn.Conv2d(128, 256, kernel_size=3, padding=1)

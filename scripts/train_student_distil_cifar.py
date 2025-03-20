@@ -14,14 +14,14 @@ from set_seed import set_seed
 from test_model import test_model
 
 
-parser = argparse.ArgumentParser(description='Train Student Model')
-parser.add_argument('--datasets-path', type=str, required=True, help='Path to the datasets folder')
-parser.add_argument('--teacher-path', type=str, required=True, help='Path to teacher model')
-parser.add_argument('--output', type=str, required=True, help='Path to the outputs folder')
-parser.add_argument('--batch-size', type=int, default=64, help='Batch size for training (default: 64)')
-parser.add_argument('--num-workers', type=int, default=4, help='Number of worker threads for data loading (default: 4)')
-parser.add_argument('--seeds-file', type=str, required=True, help='Path to the seeds list txt file')
-parser.add_argument('--alpha', type=float, default=0.6, help='Alpha parameter (default: 0.6)')
+parser = argparse.ArgumentParser(description="Train Student Model")
+parser.add_argument("--datasets-path", type=str, required=True, help="Path to the datasets folder")
+parser.add_argument("--teacher-path", type=str, required=True, help="Path to teacher model")
+parser.add_argument("--output", type=str, required=True, help="Path to the outputs folder")
+parser.add_argument("--batch-size", type=int, default=64, help="Batch size for training (default: 64)")
+parser.add_argument("--num-workers", type=int, default=4, help="Number of worker threads for data loading (default: 4)")
+parser.add_argument("--seeds-file", type=str, required=True, help="Path to the seeds list txt file")
+parser.add_argument("--alpha", type=float, default=0.6, help="Alpha parameter (default: 0.6)")
 
 args = parser.parse_args()
 datasets_path = args.datasets_path
@@ -63,7 +63,7 @@ def train_student_distill(train_loader, student_model, teacher_model, optimizer,
 
                 loss_soft = F.kl_div(F.log_softmax(student_outputs, dim=1),
                                      F.softmax(teacher_outputs, dim=1),
-                                     reduction='batchmean')
+                                     reduction="batchmean")
                 loss_hard = criterion(student_outputs, targets)
                 loss = alpha * loss_hard + (1 - alpha) * loss_soft
             else:
@@ -90,7 +90,7 @@ for run, seed in enumerate(seeds):
     for switch_epoch in range(epochs):
         print(f"Training Student with Distillation with switch_epoch = {switch_epoch+1}")
 
-        student_model = models.student_cifar.StudentModelCIFAR().to(device)  # Pick student model
+        student_model = models.student_cifar.StudentModel().to(device)  # Pick student model
         student_optimizer = optim.Adam(student_model.parameters(), lr=config.LEARNING_RATE)
         criterion = nn.CrossEntropyLoss()
         training_losses = train_student_distill(train_loader, student_model, teacher_model, student_optimizer, criterion, switch_epoch+1, alpha)
