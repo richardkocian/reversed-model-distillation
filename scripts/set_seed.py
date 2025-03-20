@@ -10,4 +10,5 @@ def set_seed(seed):
     torch.backends.cudnn.deterministic = True
     torch.backends.cudnn.benchmark = False
     torch.cuda.manual_seed(seed)
+    torch.use_deterministic_algorithms(True)
     print(f"Seed {seed} has been set!")
