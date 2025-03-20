@@ -32,9 +32,7 @@ teacher_path = args.teacher_path
 seeds_path = args.seeds_path
 alpha = args.alpha
 
-device = torch.device("cuda" if config.USE_CUDA and torch.cuda.is_available() else "cpu")
 
-print(f"Using device: {device}")
 
 seeds = np.loadtxt(seeds_path, dtype=int).tolist()
 epochs = config.EPOCHS
@@ -85,6 +83,9 @@ for run, seed in enumerate(seeds):
     switch_epoch_accuracies = []
 
     set_seed(seed)
+    device = torch.device("cuda" if config.USE_CUDA and torch.cuda.is_available() else "cpu")
+
+    print(f"Using device: {device}")
     train_loader, test_loader = get_cifar10_loaders(datasets_path=datasets_path,batch_size=batch_size,num_workers=num_workers)
 
     for switch_epoch in range(epochs):
