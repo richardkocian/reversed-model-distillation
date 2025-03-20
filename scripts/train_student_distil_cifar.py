@@ -29,12 +29,12 @@ outputs_path = args.output
 batch_size = args.batch_size
 num_workers = args.num_workers
 teacher_path = args.teacher_path
-seeds_path = args.seeds_path
+seeds_file = args.seeds_file
 alpha = args.alpha
 
 
 
-seeds = np.loadtxt(seeds_path, dtype=int).tolist()
+seeds = np.loadtxt(seeds_file, dtype=int).tolist()
 epochs = config.EPOCHS
 
 teacher_model = torch.load(teacher_path, weights_only=False)

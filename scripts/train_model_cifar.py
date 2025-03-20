@@ -23,13 +23,13 @@ datasets_path = args.datasets_path
 outputs_path = args.output
 batch_size = args.batch_size
 num_workers = args.num_workers
-seeds_path = args.seeds_path
+seeds_file = args.seeds_file
 
 device = torch.device("cuda" if config.USE_CUDA and torch.cuda.is_available() else "cpu")
 
 print(f"Using device: {device}")
 
-seeds = np.loadtxt(seeds_path, dtype=int).tolist()
+seeds = np.loadtxt(seeds_file, dtype=int).tolist()
 
 epochs = config.EPOCHS
 
