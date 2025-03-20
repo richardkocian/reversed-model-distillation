@@ -7,14 +7,11 @@ import os
 import models.student_cifar
 import models.teacher_cifar
 import argparse
+import torch.nn.functional as F
 
 from datasets.cifar10 import get_cifar10_loaders
-from scripts.set_seed import set_seed
+from set_seed import set_seed
 from test_model import test_model
-
-import torch.nn.functional as F
-from torch.utils.data import DataLoader
-
 
 
 parser = argparse.ArgumentParser(description='Train Student Model')

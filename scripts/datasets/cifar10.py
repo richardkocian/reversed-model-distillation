@@ -1,6 +1,6 @@
 from torch.utils.data import DataLoader
 from torchvision import datasets, transforms
-from scripts import config
+import config
 
 
 def get_cifar10_datasets(datasets_path):

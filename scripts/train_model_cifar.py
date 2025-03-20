@@ -7,9 +7,8 @@ import os
 import models.student_cifar
 import argparse
 
-from torch.utils.data import DataLoader
 from datasets.cifar10 import get_cifar10_loaders
-from scripts.set_seed import set_seed
+from set_seed import set_seed
 from test_model import test_model
 
 parser = argparse.ArgumentParser(description='Train Model Without Distillation')
