@@ -8,8 +8,8 @@ import models.student_cifar
 import models.teacher_cifar
 import argparse
 
-from torch.utils.data import DataLoader
-from datasets.cifar10 import get_cifar10
+from datasets.cifar10 import get_cifar10_loaders
+from scripts.set_seed import set_seed
 from test_model import test_model
 
 import torch.nn.functional as F
@@ -23,7 +23,7 @@ parser.add_argument('--teacher-path', type=str, required=True, help='Path to tea
 parser.add_argument('--output', type=str, required=True, help='Path to the outputs folder')
 parser.add_argument('--batch-size', type=int, default=64, help='Batch size for training (default: 64)')
 parser.add_argument('--num-workers', type=int, default=4, help='Number of worker threads for data loading (default: 4)')
-parser.add_argument('--runs', type=int, default=15, help='Number of runs of the experiment (default: 15)')
+parser.add_argument('--seeds-path', type=str, required=True, help='Path to the seeds list txt file')
 parser.add_argument('--alpha', type=float, default=0.6, help='Alpha parameter (default: 0.6)')
 
 args = parser.parse_args()
@@ -32,26 +32,19 @@ outputs_path = args.output
 batch_size = args.batch_size
 num_workers = args.num_workers
 teacher_path = args.teacher_path
-runs = args.runs
+seeds_path = args.seeds_path
 alpha = args.alpha
 
 device = torch.device("cuda" if config.USE_CUDA and torch.cuda.is_available() else "cpu")
 
 print(f"Using device: {device}")
 
+seeds = np.loadtxt(seeds_path, dtype=int).tolist()
 epochs = config.EPOCHS
-
-torch.backends.cudnn.benchmark = True
-
-train_dataset, test_dataset = get_cifar10(datasets_path)
-train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, num_workers=num_workers,
-                          pin_memory=config.PIN_MEMORY, persistent_workers=config.PERSISTENT_WORKERS)
-test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False, num_workers=num_workers,
-                         pin_memory=config.PIN_MEMORY, persistent_workers=config.PERSISTENT_WORKERS)
 
 teacher_model = torch.load(teacher_path, weights_only=False)
 
-def train_student_distill(student_model, teacher_model, optimizer, criterion, switch_epoch, alpha):
+def train_student_distill(train_loader, student_model, teacher_model, optimizer, criterion, switch_epoch, alpha):
     student_model.train()
     teacher_model.eval()
     training_losses = []
@@ -89,13 +82,13 @@ def train_student_distill(student_model, teacher_model, optimizer, criterion, sw
                 running_loss = 0.0
     return training_losses
 
-
-
-
-for run in range(runs):
-    print(f"Starting run {run + 1}...")
+for run, seed in enumerate(seeds):
+    print(f"Starting run {run + 1}/{len(seeds)} (seed: {seed})...")
     results = {}
     switch_epoch_accuracies = []
+
+    set_seed(seed)
+    train_loader, test_loader = get_cifar10_loaders(datasets_path=datasets_path,batch_size=batch_size,num_workers=num_workers)
 
     for switch_epoch in range(epochs):
         print(f"Training Student with Distillation with switch_epoch = {switch_epoch+1}")
@@ -103,10 +96,10 @@ for run in range(runs):
         student_model = models.student_cifar.StudentModelCIFAR().to(device)  # Pick student model
         student_optimizer = optim.Adam(student_model.parameters(), lr=config.LEARNING_RATE)
         criterion = nn.CrossEntropyLoss()
-        training_losses = train_student_distill(student_model, teacher_model, student_optimizer, criterion, switch_epoch+1, alpha)
+        training_losses = train_student_distill(train_loader, student_model, teacher_model, student_optimizer, criterion, switch_epoch+1, alpha)
         accuracy = test_model(student_model, test_loader, device)
 
-        save_dir = f"{outputs_path}/run_{run + 1}/switch_epoch_{switch_epoch+1}"
+        save_dir = f"{outputs_path}/seed_{seed}/switch_epoch_{switch_epoch+1}"
         os.makedirs(save_dir, exist_ok=True)
         np.savetxt(f"{save_dir}/training_losses.txt", training_losses)
         np.savetxt(f"{save_dir}/accuracy.txt", [accuracy], fmt="%.2f")
