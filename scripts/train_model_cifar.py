@@ -81,8 +81,9 @@ for run, seed in enumerate(seeds):
     training_losses = train_model(train_loader, model, student_optimizer, criterion)
     accuracy = test_model(model, test_loader, device)
 
-    save_dir = f"{outputs_path}/{args.model}_cifar_seed_{seed}"
+    save_dir = f"{outputs_path}/model_seed_{seed}"
     print(f"Saving Model to {save_dir}...")
     os.makedirs(save_dir, exist_ok=True)
     np.savetxt(f"{save_dir}/training_losses.txt", training_losses)
     np.savetxt(f"{save_dir}/accuracy.txt", [accuracy], fmt="%.2f")
+    torch.save(model, os.path.join(save_dir, f"teacher_model.pth"))
