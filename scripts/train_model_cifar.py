@@ -9,7 +9,7 @@ import argparse
 from datasets.cifar10 import get_cifar10_loaders
 from set_seed import set_seed
 from test_model import test_model
-from models.teacher_cifar import TeacherModelMedium, TeacherModelTiny, TeacherModelLarge
+from models.teacher_cifar import TeacherModelMedium, TeacherModelSmall, TeacherModelLarge
 from models.student_cifar import StudentModel
 
 
@@ -68,7 +68,7 @@ for run, seed in enumerate(seeds):
 
     model_dict = {
         "TeacherModelMedium": TeacherModelMedium,
-        "TeacherModelTiny": TeacherModelTiny,
+        "TeacherModelSmall": TeacherModelSmall,
         "TeacherModelLarge": TeacherModelLarge,
         "StudentModel": TeacherModelLarge
     }

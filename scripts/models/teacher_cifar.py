@@ -20,9 +20,9 @@ class TeacherModelMedium(nn.Module):
         x = self.dropout(x)
         return self.fc2(x)
 
-class TeacherModelTiny(nn.Module):
+class TeacherModelSmall(nn.Module):
     def __init__(self, input_size=32):
-        super(TeacherModelTiny, self).__init__()
+        super(TeacherModelSmall, self).__init__()
         self.conv1 = nn.Conv2d(3, 4, kernel_size=3, padding=1)  # Jen 4 filtry
         self.pool = nn.MaxPool2d(2, 2)
 
