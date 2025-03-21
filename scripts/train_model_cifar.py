@@ -70,7 +70,7 @@ for run, seed in enumerate(seeds):
         "TeacherModelMedium": TeacherModelMedium,
         "TeacherModelSmall": TeacherModelSmall,
         "TeacherModelLarge": TeacherModelLarge,
-        "StudentModel": TeacherModelLarge
+        "StudentModel": StudentModel
     }
 
     model_class = model_dict[args.model]
