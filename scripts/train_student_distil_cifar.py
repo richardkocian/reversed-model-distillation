@@ -4,15 +4,22 @@ import torch.optim as optim
 import torch.nn as nn
 import config
 import os
-import models.student_cifar
-import models.teacher_cifar
 import argparse
 import torch.nn.functional as F
 
-from datasets.cifar10 import get_cifar10_loaders
+from datasets.datasets import get_loaders
 from set_seed import set_seed
 from test_model import test_model
+from models.cifar import StudentModelCIFAR
+from models.fashion_mnist import StudentModelFashionMNIST
 
+def get_student_model(dataset):
+    if dataset == "cifar10":
+        return StudentModelCIFAR()
+    elif dataset == "fashion_mnist":
+        return StudentModelFashionMNIST()
+    else:
+        raise ValueError("Unknown combination of dataset and model")
 
 parser = argparse.ArgumentParser(description="Train Student Model")
 parser.add_argument("--datasets-path", type=str, required=True, help="Path to the datasets folder")
@@ -22,6 +29,7 @@ parser.add_argument("--batch-size", type=int, default=64, help="Batch size for t
 parser.add_argument("--num-workers", type=int, default=4, help="Number of worker threads for data loading (default: 4)")
 parser.add_argument("--seeds-file", type=str, required=True, help="Path to the seeds list txt file")
 parser.add_argument("--alpha", type=float, default=0.6, help="Alpha parameter (default: 0.6)")
+parser.add_argument("--dataset", type=str, required=True, choices=["cifar10", "fashion_mnist"], help="Dataset")
 
 args = parser.parse_args()
 datasets_path = args.datasets_path
@@ -31,6 +39,7 @@ num_workers = args.num_workers
 teacher_path = args.teacher_path
 seeds_file = args.seeds_file
 alpha = args.alpha
+dataset = args.dataset
 
 device = torch.device("cuda" if config.USE_CUDA and torch.cuda.is_available() else "cpu")
 
@@ -85,12 +94,12 @@ for run, seed in enumerate(seeds):
     switch_epoch_accuracies = []
 
     set_seed(seed)
-    train_loader, test_loader = get_cifar10_loaders(datasets_path=datasets_path,batch_size=batch_size,num_workers=num_workers)
+    train_loader, test_loader = get_loaders(datasets_path=datasets_path,batch_size=batch_size,num_workers=num_workers, dataset=dataset)
 
     for switch_epoch in range(epochs):
         print(f"Training Student with Distillation with switch_epoch = {switch_epoch+1}")
 
-        student_model = models.student_cifar.StudentModel().to(device)  # Pick student model
+        student_model = get_student_model(dataset).to(device)
         student_optimizer = optim.Adam(student_model.parameters(), lr=config.LEARNING_RATE)
         criterion = nn.CrossEntropyLoss()
         training_losses = train_student_distill(train_loader, student_model, teacher_model, student_optimizer, criterion, switch_epoch+1, alpha)
