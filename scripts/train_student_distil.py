@@ -8,16 +8,20 @@ import argparse
 import torch.nn.functional as F
 
 from datasets.datasets import get_loaders
+from scripts.test_model import test_model_california
 from set_seed import set_seed
 from test_model import test_model
 from models.cifar import StudentModelCIFAR
 from models.fashion_mnist import StudentModelFashionMNIST
+from models.california_housing import StudentModelCALIFORNIA
 
 def get_student_model(dataset):
     if dataset == "cifar10":
         return StudentModelCIFAR()
     elif dataset == "fashion_mnist":
         return StudentModelFashionMNIST()
+    elif dataset == "california_housing":
+        return StudentModelCALIFORNIA()
     else:
         raise ValueError("Unknown combination of dataset and model")
 
@@ -29,7 +33,7 @@ parser.add_argument("--batch-size", type=int, default=64, help="Batch size for t
 parser.add_argument("--num-workers", type=int, default=4, help="Number of worker threads for data loading (default: 4)")
 parser.add_argument("--seeds-file", type=str, required=True, help="Path to the seeds list txt file")
 parser.add_argument("--alpha", type=float, default=0.6, help="Alpha parameter (default: 0.6)")
-parser.add_argument("--dataset", type=str, required=True, choices=["cifar10", "fashion_mnist"], help="Dataset")
+parser.add_argument("--dataset", type=str, required=True, choices=["cifar10", "fashion_mnist", "california_housing"], help="Dataset")
 
 args = parser.parse_args()
 datasets_path = args.datasets_path
@@ -101,9 +105,15 @@ for run, seed in enumerate(seeds):
 
         student_model = get_student_model(dataset).to(device)
         student_optimizer = optim.Adam(student_model.parameters(), lr=config.LEARNING_RATE)
-        criterion = nn.CrossEntropyLoss()
-        training_losses = train_student_distill(train_loader, student_model, teacher_model, student_optimizer, criterion, switch_epoch+1, alpha)
-        accuracy = test_model(student_model, test_loader, device)
+        if dataset == "california_housing":
+            criterion = nn.MSELoss()
+            training_losses = train_student_distill(train_loader, student_model, teacher_model, student_optimizer,
+                                                    criterion, switch_epoch + 1, alpha)
+            accuracy = test_model_california(student_model, test_loader, device)
+        else:
+            criterion = nn.CrossEntropyLoss()
+            training_losses = train_student_distill(train_loader, student_model, teacher_model, student_optimizer, criterion, switch_epoch+1, alpha)
+            accuracy = test_model(student_model, test_loader, device)
 
         save_dir = f"{outputs_path}/seed_{seed}/switch_epoch_{switch_epoch+1}"
         os.makedirs(save_dir, exist_ok=True)
