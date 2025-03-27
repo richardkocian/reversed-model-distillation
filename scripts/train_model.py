@@ -7,7 +7,7 @@ import os
 import argparse
 
 from datasets.datasets import get_loaders
-from scripts.test_model import test_model_california
+from test_model import test_model_california
 from set_seed import set_seed
 from test_model import test_model
 from models.cifar import TeacherModelSmallCIFAR, TeacherModelMediumCIFAR, TeacherModelLargeCIFAR, StudentModelCIFAR
@@ -96,14 +96,15 @@ def train_model(train_loader, model, optimizer, criterion):
 
 for run, seed in enumerate(seeds):
     print(f"Training Model {run + 1}/{len(seeds)} (seed: {seed})...")
-    
+
     set_seed(seed)
     train_loader, test_loader = get_loaders(datasets_path=datasets_path, batch_size=batch_size,
                                                     num_workers=num_workers, dataset=dataset)
 
     model = get_teacher_model(dataset, model_type).to(device)
+    print(model)
     student_optimizer = optim.Adam(model.parameters(), lr=config.LEARNING_RATE)
-    if dataset == "california_housng":
+    if dataset == "california_housing":
         criterion = nn.MSELoss()
         training_losses = train_model(train_loader, model, student_optimizer, criterion)
         accuracy = test_model_california(model, test_loader, device)
