@@ -11,6 +11,7 @@ from set_seed import set_seed
 from test_model import test_model
 from models.cifar import TeacherModelSmallCIFAR, TeacherModelMediumCIFAR, TeacherModelLargeCIFAR, StudentModelCIFAR
 from models.fashion_mnist import TeacherModelSmallFashionMNIST, TeacherModelMediumFashionMNIST, TeacherModelLargeFashionMNIST, StudentModelFashionMNIST
+from models.california_housing import TeacherModelMediumCALIFORNIA, StudentModelCALIFORNIA
 
 def get_teacher_model(dataset, model_type):
     if dataset == "cifar10":
@@ -31,6 +32,15 @@ def get_teacher_model(dataset, model_type):
             return TeacherModelLargeFashionMNIST()
         elif model_type == "StudentModel":
             return StudentModelFashionMNIST()
+    elif dataset == "california_housing":
+        if model_type == "TeacherModelSmall":
+            raise ValueError("Unknown combination of dataset and model")
+        elif model_type == "TeacherModelMedium":
+            return TeacherModelMediumCALIFORNIA()
+        elif model_type == "TeacherModelLarge":
+            raise ValueError("Unknown combination of dataset and model")
+        elif model_type == "StudentModel":
+            return StudentModelCALIFORNIA()
     else:
         raise ValueError("Unknown combination of dataset and model")
 
@@ -41,7 +51,7 @@ parser.add_argument("--batch-size", type=int, default=64, help="Batch size for t
 parser.add_argument("--num-workers", type=int, default=4, help="Number of worker threads for data loading (default: 4)")
 parser.add_argument("--seeds-file", type=str, required=True, help="Path to the seeds list txt file")
 parser.add_argument("--model", type=str, required=True, choices=["TeacherModelSmall", "TeacherModelMedium", "TeacherModelLarge", "StudentModel"], help="Model to train")
-parser.add_argument("--dataset", type=str, required=True, choices=["cifar10", "fashion_mnist"], help="Dataset")
+parser.add_argument("--dataset", type=str, required=True, choices=["cifar10", "fashion_mnist", "california_housing"], help="Dataset")
 
 args = parser.parse_args()
 datasets_path = args.datasets_path
@@ -92,7 +102,10 @@ for run, seed in enumerate(seeds):
 
     model = get_teacher_model(dataset, model_type).to(device)
     student_optimizer = optim.Adam(model.parameters(), lr=config.LEARNING_RATE)
-    criterion = nn.CrossEntropyLoss()
+    if dataset == "california_housng":
+        criterion = nn.MSELoss()
+    else:
+        criterion = nn.CrossEntropyLoss()
 
     training_losses = train_model(train_loader, model, student_optimizer, criterion)
     accuracy = test_model(model, test_loader, device)
