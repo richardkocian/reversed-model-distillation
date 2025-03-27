@@ -7,6 +7,7 @@ import os
 import argparse
 
 from datasets.datasets import get_loaders
+from scripts.test_model import test_model_california
 from set_seed import set_seed
 from test_model import test_model
 from models.cifar import TeacherModelSmallCIFAR, TeacherModelMediumCIFAR, TeacherModelLargeCIFAR, StudentModelCIFAR
@@ -104,11 +105,12 @@ for run, seed in enumerate(seeds):
     student_optimizer = optim.Adam(model.parameters(), lr=config.LEARNING_RATE)
     if dataset == "california_housng":
         criterion = nn.MSELoss()
+        training_losses = train_model(train_loader, model, student_optimizer, criterion)
+        accuracy = test_model_california(model, test_loader, device)
     else:
         criterion = nn.CrossEntropyLoss()
-
-    training_losses = train_model(train_loader, model, student_optimizer, criterion)
-    accuracy = test_model(model, test_loader, device)
+        training_losses = train_model(train_loader, model, student_optimizer, criterion)
+        accuracy = test_model(model, test_loader, device)
 
     save_dir = f"{outputs_path}/model_seed_{seed}"
     print(f"Saving Model to {save_dir}...")
