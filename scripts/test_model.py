@@ -14,18 +14,18 @@ def test_model(model, test_loader, device):
     print(f'Accuracy: {accuracy}%')
     return accuracy
 
-def test_model_california(model, test_loader, device):
+def test_model_regression(model, test_loader, device):
+    X_test, y_test = test_loader
+    X_test_tensor = torch.tensor(X_test, dtype=torch.float32).to(device)
+    y_test_tensor = torch.tensor(y_test, dtype=torch.float32).to(device)
     model.eval()
     total_loss = 0.0
     criterion = nn.MSELoss()
 
     with torch.no_grad():
-        for inputs, targets in test_loader:
-            inputs, targets = inputs.to(device), targets.to(device)
-            outputs = model(inputs)
-            loss = criterion(outputs, targets)
-            total_loss += loss.item()
+        outputs = model(X_test_tensor)
+        loss = criterion(outputs, y_test_tensor)
+        total_loss += loss.item()
 
-    avg_loss = total_loss / len(test_loader)
-    print(f"Test Loss: {avg_loss:.4f}")
-    return avg_loss  # 🟢 VRACÍME TEST LOSS!
+    print(f"Test Loss: {total_loss:.6f}")
+    return total_loss

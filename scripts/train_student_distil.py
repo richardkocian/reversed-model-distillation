@@ -8,9 +8,8 @@ import argparse
 import torch.nn.functional as F
 
 from datasets.datasets import get_loaders
-from scripts.test_model import test_model_california
 from set_seed import set_seed
-from test_model import test_model
+from test_model import test_model, test_model_regression
 from models.cifar import StudentModelCIFAR
 from models.fashion_mnist import StudentModelFashionMNIST
 from models.california_housing import StudentModelCALIFORNIA
@@ -24,6 +23,13 @@ def get_student_model(dataset):
         return StudentModelCALIFORNIA()
     else:
         raise ValueError("Unknown combination of dataset and model")
+
+def save_results(dataset, seed, outputs_path, switch_epoch, training_losses, accuracy):
+    decimal_places = 6 if dataset == "california_housing" else 2
+    save_dir = f"{outputs_path}/seed_{seed}/switch_epoch_{switch_epoch}"
+    os.makedirs(save_dir, exist_ok=True)
+    np.savetxt(f"{save_dir}/training_losses.txt", training_losses)
+    np.savetxt(f"{save_dir}/accuracy.txt", [accuracy], fmt=f"%.{decimal_places}f")
 
 parser = argparse.ArgumentParser(description="Train Student Model")
 parser.add_argument("--datasets-path", type=str, required=True, help="Path to the datasets folder")
@@ -50,11 +56,11 @@ device = torch.device("cuda" if config.USE_CUDA and torch.cuda.is_available() el
 print(f"Using device: {device}")
 
 seeds = np.loadtxt(seeds_file, dtype=int).tolist()
-epochs = config.EPOCHS
 
 teacher_model = torch.load(teacher_path, weights_only=False)
 
 def train_student_distill(train_loader, student_model, teacher_model, optimizer, criterion, switch_epoch, alpha):
+    epochs = config.EPOCHS
     student_model.train()
     teacher_model.eval()
     training_losses = []
@@ -91,6 +97,31 @@ def train_student_distill(train_loader, student_model, teacher_model, optimizer,
                 training_losses.append(running_loss / 100)
                 running_loss = 0.0
     return training_losses
+def train_student_distill_regression(train_loader, student_model, teacher_model, optimizer, criterion, switch_epoch, alpha):
+    epochs = config.EPOCHS_REGRESSION
+    X_train, y_train = train_loader
+    X_train_tensor = torch.tensor(X_train, dtype=torch.float32).to(device)
+    y_train_tensor = torch.tensor(y_train, dtype=torch.float32).to(device)
+    student_model.train()
+    teacher_model.eval()
+    training_losses = []
+    for epoch in range(epochs):
+        optimizer.zero_grad()
+        student_outputs = student_model(X_train_tensor)
+        if epoch < switch_epoch:
+            with torch.no_grad():
+                teacher_outputs = teacher_model(X_train_tensor)
+
+            loss_soft = criterion(student_outputs, teacher_outputs)
+            loss_hard = criterion(student_outputs, y_train_tensor)
+            loss = alpha * loss_hard + (1 - alpha) * loss_soft
+        else:
+            loss = criterion(student_outputs, y_train_tensor)
+
+        loss.backward()
+        optimizer.step()
+        training_losses.append(loss.item())
+    return training_losses
 
 for run, seed in enumerate(seeds):
     print(f"Starting run {run + 1}/{len(seeds)} (seed: {seed})...")
@@ -99,23 +130,31 @@ for run, seed in enumerate(seeds):
 
     set_seed(seed)
     train_loader, test_loader = get_loaders(datasets_path=datasets_path,batch_size=batch_size,num_workers=num_workers, dataset=dataset)
-
-    for switch_epoch in range(epochs):
-        print(f"Training Student with Distillation with switch_epoch = {switch_epoch+1}")
-
-        student_model = get_student_model(dataset).to(device)
-        student_optimizer = optim.Adam(student_model.parameters(), lr=config.LEARNING_RATE)
-        if dataset == "california_housing":
+    if dataset == "california_housing":
+        epochs = config.EPOCHS_REGRESSION
+        switch_epochs = 15
+        step_size = epochs // switch_epochs
+        for i in range(1, switch_epochs + 1):
+            switch_epoch = i * step_size
+            print(f"Training Student with Distillation, switch_epoch = {switch_epoch}")
+            student_model = get_student_model(dataset).to(device)
+            student_optimizer = optim.Adam(student_model.parameters(), lr=config.LEARNING_RATE)
             criterion = nn.MSELoss()
-            training_losses = train_student_distill(train_loader, student_model, teacher_model, student_optimizer,
-                                                    criterion, switch_epoch + 1, alpha)
-            accuracy = test_model_california(student_model, test_loader, device)
-        else:
+            training_losses = train_student_distill_regression(train_loader, student_model, teacher_model, student_optimizer,
+                                                    criterion, switch_epoch, alpha)
+            accuracy = test_model_regression(student_model, test_loader, device)
+
+            save_results(dataset, seed, outputs_path, switch_epoch, training_losses, accuracy)
+    else:
+        epochs = config.EPOCHS
+        for switch_epoch in range(epochs): #TODO range(1, epochs + 1)
+            print(f"Training Student with Distillation with switch_epoch = {switch_epoch+1}")
+
+            student_model = get_student_model(dataset).to(device)
+            student_optimizer = optim.Adam(student_model.parameters(), lr=config.LEARNING_RATE)
+
             criterion = nn.CrossEntropyLoss()
             training_losses = train_student_distill(train_loader, student_model, teacher_model, student_optimizer, criterion, switch_epoch+1, alpha)
             accuracy = test_model(student_model, test_loader, device)
 
-        save_dir = f"{outputs_path}/seed_{seed}/switch_epoch_{switch_epoch+1}"
-        os.makedirs(save_dir, exist_ok=True)
-        np.savetxt(f"{save_dir}/training_losses.txt", training_losses)
-        np.savetxt(f"{save_dir}/accuracy.txt", [accuracy], fmt="%.2f")
+            save_results(dataset, seed, outputs_path, switch_epoch+1, training_losses, accuracy)
