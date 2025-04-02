@@ -11,7 +11,7 @@ from set_seed import set_seed
 from test_model import test_model, test_model_regression
 from models.cifar import TeacherModelSmallCIFAR, TeacherModelMediumCIFAR, TeacherModelLargeCIFAR, StudentModelCIFAR
 from models.fashion_mnist import TeacherModelSmallFashionMNIST, TeacherModelMediumFashionMNIST, TeacherModelLargeFashionMNIST, StudentModelFashionMNIST
-from models.california_housing import TeacherModelMediumCALIFORNIA, StudentModelCALIFORNIA
+from models.california_housing import TeacherModelSmallCALIFORNIA, TeacherModelMediumCALIFORNIA, TeacherModelLargeCALIFORNIA, StudentModelCALIFORNIA
 
 def get_teacher_model(dataset, model_type):
     if dataset == "cifar10":
@@ -34,11 +34,11 @@ def get_teacher_model(dataset, model_type):
             return StudentModelFashionMNIST()
     elif dataset == "california_housing":
         if model_type == "TeacherModelSmall":
-            raise ValueError("Unknown combination of dataset and model")
+            return TeacherModelSmallCALIFORNIA()
         elif model_type == "TeacherModelMedium":
             return TeacherModelMediumCALIFORNIA()
         elif model_type == "TeacherModelLarge":
-            raise ValueError("Unknown combination of dataset and model")
+            return TeacherModelLargeCALIFORNIA()
         elif model_type == "StudentModel":
             return StudentModelCALIFORNIA()
     else:
@@ -124,7 +124,6 @@ for run, seed in enumerate(seeds):
                                                 num_workers=num_workers, dataset=dataset)
 
     model = get_teacher_model(dataset, model_type).to(device)
-    print(model)
     student_optimizer = optim.Adam(model.parameters(), lr=config.LEARNING_RATE)
 
     if dataset == "california_housing":
