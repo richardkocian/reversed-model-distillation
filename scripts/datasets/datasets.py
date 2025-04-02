@@ -1,5 +1,9 @@
-from torch.utils.data import DataLoader
+from torch.utils.data import DataLoader, TensorDataset
 from torchvision import datasets, transforms
+from sklearn.datasets import fetch_california_housing
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
+import torch
 import config
 
 
@@ -25,7 +29,26 @@ def get_mnist_datasets(datasets_path):
 
     return train_dataset, test_dataset
 
+def get_california_housing_datasets():
+    data = fetch_california_housing()
+    X, y = data.data, data.target.reshape(-1, 1)
+
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+    scaler_X = StandardScaler()
+    scaler_y = StandardScaler()
+    X_train = scaler_X.fit_transform(X_train)
+    X_test = scaler_X.transform(X_test)
+    y_train = scaler_y.fit_transform(y_train)
+    y_test = scaler_y.transform(y_test)
+
+    return [X_train, y_train], [X_test, y_test]
+
 def get_loaders(datasets_path, batch_size, num_workers, dataset):
+    if dataset == "california_housing":
+        train_loader, test_loader = get_california_housing_datasets()
+        return train_loader, test_loader
+
     if dataset == "cifar10":
         train_dataset, test_dataset = get_cifar10_datasets(datasets_path)
     elif dataset == "fashion_mnist":
@@ -37,4 +60,5 @@ def get_loaders(datasets_path, batch_size, num_workers, dataset):
                               pin_memory=config.PIN_MEMORY, persistent_workers=config.PERSISTENT_WORKERS)
     test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False, num_workers=num_workers,
                              pin_memory=config.PIN_MEMORY, persistent_workers=config.PERSISTENT_WORKERS)
+
     return train_loader, test_loader

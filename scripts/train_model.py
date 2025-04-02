@@ -8,9 +8,10 @@ import argparse
 
 from datasets.datasets import get_loaders
 from set_seed import set_seed
-from test_model import test_model
+from test_model import test_model, test_model_regression
 from models.cifar import TeacherModelSmallCIFAR, TeacherModelMediumCIFAR, TeacherModelLargeCIFAR, StudentModelCIFAR
 from models.fashion_mnist import TeacherModelSmallFashionMNIST, TeacherModelMediumFashionMNIST, TeacherModelLargeFashionMNIST, StudentModelFashionMNIST
+from models.california_housing import TeacherModelSmallCALIFORNIA, TeacherModelMediumCALIFORNIA, TeacherModelLargeCALIFORNIA, StudentModelCALIFORNIA
 
 def get_teacher_model(dataset, model_type):
     if dataset == "cifar10":
@@ -31,6 +32,15 @@ def get_teacher_model(dataset, model_type):
             return TeacherModelLargeFashionMNIST()
         elif model_type == "StudentModel":
             return StudentModelFashionMNIST()
+    elif dataset == "california_housing":
+        if model_type == "TeacherModelSmall":
+            return TeacherModelSmallCALIFORNIA()
+        elif model_type == "TeacherModelMedium":
+            return TeacherModelMediumCALIFORNIA()
+        elif model_type == "TeacherModelLarge":
+            return TeacherModelLargeCALIFORNIA()
+        elif model_type == "StudentModel":
+            return StudentModelCALIFORNIA()
     else:
         raise ValueError("Unknown combination of dataset and model")
 
@@ -41,7 +51,7 @@ parser.add_argument("--batch-size", type=int, default=64, help="Batch size for t
 parser.add_argument("--num-workers", type=int, default=4, help="Number of worker threads for data loading (default: 4)")
 parser.add_argument("--seeds-file", type=str, required=True, help="Path to the seeds list txt file")
 parser.add_argument("--model", type=str, required=True, choices=["TeacherModelSmall", "TeacherModelMedium", "TeacherModelLarge", "StudentModel"], help="Model to train")
-parser.add_argument("--dataset", type=str, required=True, choices=["cifar10", "fashion_mnist"], help="Dataset")
+parser.add_argument("--dataset", type=str, required=True, choices=["cifar10", "fashion_mnist", "california_housing"], help="Dataset")
 
 args = parser.parse_args()
 datasets_path = args.datasets_path
@@ -58,9 +68,9 @@ print(f"Using device: {device}")
 
 seeds = np.loadtxt(seeds_file, dtype=int).tolist()
 
-epochs = config.EPOCHS
 
 def train_model(train_loader, model, optimizer, criterion):
+    epochs = config.EPOCHS
     model.train()
     training_losses = []
     for epoch in range(epochs):
@@ -82,24 +92,53 @@ def train_model(train_loader, model, optimizer, criterion):
                 running_loss = 0.0
     return training_losses
 
+def train_model_reggresion(train_loader, model, optimizer, criterion):
+    epochs = config.EPOCHS_REGRESSION
+    X_train, y_train = train_loader
+    X_train_tensor = torch.tensor(X_train, dtype=torch.float32).to(device)
+    y_train_tensor = torch.tensor(y_train, dtype=torch.float32).to(device)
+
+    model.train()
+    training_losses = []
+    for epoch in range(epochs):
+        optimizer.zero_grad()
+
+        outputs = model(X_train_tensor)
+        loss = criterion(outputs, y_train_tensor)
+
+        loss.backward()
+        optimizer.step()
+
+        training_losses.append(loss.item())
+        #print(f"Epoch [{epoch + 1}/{epochs}], Loss: {loss.item():.4f}")
+
+    return training_losses
+
 
 for run, seed in enumerate(seeds):
     print(f"Training Model {run + 1}/{len(seeds)} (seed: {seed})...")
-    
+
     set_seed(seed)
+
     train_loader, test_loader = get_loaders(datasets_path=datasets_path, batch_size=batch_size,
-                                                    num_workers=num_workers, dataset=dataset)
+                                                num_workers=num_workers, dataset=dataset)
 
     model = get_teacher_model(dataset, model_type).to(device)
     student_optimizer = optim.Adam(model.parameters(), lr=config.LEARNING_RATE)
-    criterion = nn.CrossEntropyLoss()
 
-    training_losses = train_model(train_loader, model, student_optimizer, criterion)
-    accuracy = test_model(model, test_loader, device)
+    if dataset == "california_housing":
+        criterion = nn.MSELoss()
+        training_losses = train_model_reggresion(train_loader, model, student_optimizer, criterion)
+        accuracy = test_model_regression(model, test_loader, device)
+    else:
+        criterion = nn.CrossEntropyLoss()
+        training_losses = train_model(train_loader, model, student_optimizer, criterion)
+        accuracy = test_model(model, test_loader, device)
 
     save_dir = f"{outputs_path}/model_seed_{seed}"
     print(f"Saving Model to {save_dir}...")
     os.makedirs(save_dir, exist_ok=True)
     np.savetxt(f"{save_dir}/training_losses.txt", training_losses)
-    np.savetxt(f"{save_dir}/accuracy.txt", [accuracy], fmt="%.2f")
+    decimal_places = 6 if dataset == "california_housing" else 2
+    np.savetxt(f"{save_dir}/accuracy.txt", [accuracy], fmt=f"%.{decimal_places}f")
     torch.save(model, os.path.join(save_dir, f"teacher_model.pth"))
