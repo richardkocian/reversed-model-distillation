@@ -112,9 +112,7 @@ def train_student_distill_regression(train_loader, student_model, teacher_model,
             with torch.no_grad():
                 teacher_outputs = teacher_model(X_train_tensor)
 
-            loss_soft = F.kl_div(F.log_softmax(student_outputs, dim=1),
-                                 F.softmax(teacher_outputs, dim=1),
-                                 reduction="batchmean")
+            loss_soft = criterion(student_outputs, teacher_outputs)
             loss_hard = criterion(student_outputs, y_train_tensor)
             loss = alpha * loss_hard + (1 - alpha) * loss_soft
         else:
