@@ -50,7 +50,7 @@ def test_model_fgsm(model, test_loader, device):
         inputs_filtered = inputs[mask]
         targets_filtered = targets[mask]
 
-        data_fgsm = fgsm_attack(model, inputs_filtered, targets_filtered, 0.1)
+        data_fgsm = fgsm_attack(model, inputs_filtered, targets_filtered, 0.005)
 
         with torch.no_grad():
             outputs_fgsm = model(data_fgsm)
@@ -80,6 +80,6 @@ def fgsm_attack(model, images, labels, epsilon):
     data_grad = images.grad.data
     perturbed_images = images + epsilon * data_grad.sign()
 
-    perturbed_images = torch.clamp(perturbed_images, 0, 1)
+    perturbed_images = torch.clamp(perturbed_images, -1, 1)
 
     return perturbed_images
