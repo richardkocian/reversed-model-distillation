@@ -38,4 +38,4 @@ for run, seed in enumerate(seeds):
     set_seed(seed)
     train_loader, test_loader = get_loaders(datasets_path=datasets_path, batch_size=batch_size, num_workers=num_workers,
                                             dataset=dataset)
-    test_model(model,train_loader, device)
+    test_model_fgsm(model,test_loader, device)
