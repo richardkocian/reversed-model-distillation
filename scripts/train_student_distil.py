@@ -24,12 +24,14 @@ def get_student_model(dataset):
     else:
         raise ValueError("Unknown combination of dataset and model")
 
-def save_results(dataset, seed, outputs_path, switch_epoch, training_losses, accuracy):
+def save_results(dataset, seed, outputs_path, switch_epoch, training_losses, accuracy, student_model):
     decimal_places = 6 if dataset == "california_housing" else 2
     save_dir = f"{outputs_path}/seed_{seed}/switch_epoch_{switch_epoch}"
     os.makedirs(save_dir, exist_ok=True)
     np.savetxt(f"{save_dir}/training_losses.txt", training_losses)
     np.savetxt(f"{save_dir}/accuracy.txt", [accuracy], fmt=f"%.{decimal_places}f")
+    if args.save_model:
+        torch.save(student_model, os.path.join(save_dir, f"student_model.pth"))
 
 parser = argparse.ArgumentParser(description="Train Student Model")
 parser.add_argument("--datasets-path", type=str, required=True, help="Path to the datasets folder")
@@ -40,6 +42,7 @@ parser.add_argument("--num-workers", type=int, default=4, help="Number of worker
 parser.add_argument("--seeds-file", type=str, required=True, help="Path to the seeds list txt file")
 parser.add_argument("--alpha", type=float, default=0.6, help="Alpha parameter (default: 0.6)")
 parser.add_argument("--dataset", type=str, required=True, choices=["cifar10", "fashion_mnist", "california_housing"], help="Dataset")
+parser.add_argument("--save-model", action="store_true", help="Save trained models (.pth)")
 
 args = parser.parse_args()
 datasets_path = args.datasets_path
@@ -144,7 +147,7 @@ for run, seed in enumerate(seeds):
                                                     criterion, switch_epoch, alpha)
             accuracy = test_model_regression(student_model, test_loader, device)
 
-            save_results(dataset, seed, outputs_path, switch_epoch, training_losses, accuracy)
+            save_results(dataset, seed, outputs_path, switch_epoch, training_losses, accuracy, student_model)
     else:
         epochs = config.EPOCHS
         for switch_epoch in range(epochs): #TODO range(1, epochs + 1)
@@ -157,4 +160,4 @@ for run, seed in enumerate(seeds):
             training_losses = train_student_distill(train_loader, student_model, teacher_model, student_optimizer, criterion, switch_epoch+1, alpha)
             accuracy = test_model(student_model, test_loader, device)
 
-            save_results(dataset, seed, outputs_path, switch_epoch+1, training_losses, accuracy)
+            save_results(dataset, seed, outputs_path, switch_epoch+1, training_losses, accuracy, student_model)
