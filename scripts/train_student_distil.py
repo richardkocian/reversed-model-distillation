@@ -131,13 +131,14 @@ for run, seed in enumerate(seeds):
     results = {}
     switch_epoch_accuracies = []
 
-    set_seed(seed)
-    train_loader, test_loader = get_loaders(datasets_path=datasets_path,batch_size=batch_size,num_workers=num_workers, dataset=dataset)
     if dataset == "california_housing":
         epochs = config.EPOCHS_REGRESSION
         switch_epochs = 15
         step_size = epochs // switch_epochs
         for i in range(1, switch_epochs + 1):
+            set_seed(seed)
+            train_loader, test_loader = get_loaders(datasets_path=datasets_path, batch_size=batch_size,
+                                                    num_workers=num_workers, dataset=dataset)
             switch_epoch = i * step_size
             print(f"Training Student with Distillation, switch_epoch = {switch_epoch}")
             student_model = get_student_model(dataset).to(device)
@@ -151,6 +152,9 @@ for run, seed in enumerate(seeds):
     else:
         switch_epochs = config.EPOCHS
         for switch_epoch in range(1, switch_epochs + 1):
+            set_seed(seed)
+            train_loader, test_loader = get_loaders(datasets_path=datasets_path, batch_size=batch_size,
+                                                    num_workers=num_workers, dataset=dataset)
             print(f"Training Student with Distillation with switch_epoch = {switch_epoch}")
 
             student_model = get_student_model(dataset).to(device)
