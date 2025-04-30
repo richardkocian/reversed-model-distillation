@@ -31,7 +31,7 @@ def test_model_regression(model, test_loader, device):
     print(f"Test Loss: {total_loss:.6f}")
     return total_loss
 
-def test_model_fgsm(model, test_loader, device):
+def test_model_fgsm(model, test_loader, device, epsilon):
     model.eval()
     correct = 0
     correct_fgsm = 0
@@ -50,7 +50,7 @@ def test_model_fgsm(model, test_loader, device):
         inputs_filtered = inputs[mask]
         targets_filtered = targets[mask]
 
-        data_fgsm = fgsm_attack(model, inputs_filtered, targets_filtered, 0.005)
+        data_fgsm = fgsm_attack(model, inputs_filtered, targets_filtered, epsilon)
 
         with torch.no_grad():
             outputs_fgsm = model(data_fgsm)
@@ -58,22 +58,17 @@ def test_model_fgsm(model, test_loader, device):
 
         correct_fgsm += predicted_fgsm.eq(targets_filtered).sum().item()
 
-
-    accuracy = 100. * correct / len(test_loader.dataset)
     accuracy_fgsm = 100. * correct_fgsm / len(test_loader.dataset)
-    print(f'Accuracy: {accuracy}%')
-    print(f'Accuracy_fgsm: {accuracy_fgsm}%')
-    return accuracy
+    print(f'Accuracy FGSM: {accuracy_fgsm}%')
+    return accuracy_fgsm
 
 
 def fgsm_attack(model, images, labels, epsilon):
     images = images.clone().detach().requires_grad_(True)
 
-    # Forward pass
     outputs = model(images)
     loss = F.cross_entropy(outputs, labels)
 
-    # Backward pass
     model.zero_grad()
     loss.backward()
 
