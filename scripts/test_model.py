@@ -87,8 +87,7 @@ def test_model_fgsm_regression(model, test_loader, device, epsilon):
         loss_fgsm = criterion(outputs_fgsm, y_test_tensor)
         total_loss_fgsm += loss_fgsm.item()
 
-    print(f"Test Loss: {total_loss:.6f}")
-    print(f"FGSM Loss: {total_loss:.6f}")
+    print(f"FGSM Loss: {total_loss_fgsm}")
     return total_loss_fgsm
 
 
