@@ -1,8 +1,7 @@
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
 
-def test_model(model, test_loader, device):
+def test_model_classification(model, test_loader, device):
     model.eval()
     correct = 0
     with torch.no_grad():
@@ -31,7 +30,7 @@ def test_model_regression(model, test_loader, device):
     print(f"Test Loss: {total_loss:.6f}")
     return total_loss
 
-def test_model_fgsm(model, test_loader, device, epsilon):
+def test_model_fgsm_classification(model, test_loader, device, epsilon):
     model.eval()
     correct = 0
     correct_fgsm = 0

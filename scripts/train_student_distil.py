@@ -11,9 +11,8 @@ import time
 import csv
 
 from datasets.datasets import get_loaders
-from scripts.test_model import test_model_fgsm_regression
 from set_seed import set_seed
-from test_model import test_model, test_model_regression, test_model_fgsm
+from test_model import test_model_classification, test_model_regression, test_model_fgsm_classification, test_model_fgsm_regression
 from models.cifar import StudentModelCIFAR
 from models.fashion_mnist import StudentModelFashionMNIST
 from models.california_housing import StudentModelCALIFORNIA
@@ -178,7 +177,7 @@ for run, seed in enumerate(seeds):
 
             criterion = nn.CrossEntropyLoss()
             training_losses = train_student_distill(train_loader, student_model, teacher_model, student_optimizer, criterion, switch_epoch, alpha)
-            accuracy = test_model(student_model, test_loader, device)
+            accuracy = test_model_classification(student_model, test_loader, device)
             save_dir = f"{outputs_path}/seed_{seed}/switch_epoch_{switch_epoch}"
             save_results(dataset, save_dir, training_losses, accuracy, student_model)
 
@@ -188,7 +187,7 @@ for run, seed in enumerate(seeds):
 
                 for epsilon in [0, 0.005, 0.01, 0.05]:
                     print(f"Running FGSM test with epsilon: {epsilon}...")
-                    fgsm_accuracy = test_model_fgsm(student_model, test_loader, device, epsilon)
+                    fgsm_accuracy = test_model_fgsm_classification(student_model, test_loader, device, epsilon)
                     writer.writerow([epsilon, fgsm_accuracy])
 
             del train_loader, test_loader
