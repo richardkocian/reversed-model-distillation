@@ -1,7 +1,7 @@
 import argparse
 import torch
 import config
-from test_model import test_model_fgsm
+from test_model import test_model_fgsm, test_model_fgsm_regression
 from datasets.datasets import get_loaders
 import os
 import csv
@@ -46,5 +46,8 @@ for dirpath, dirnames, filenames in os.walk(modesl_path):
 
                 for epsilon in epsilons:
                     print(f"Running FGSM test with epsilon: {epsilon}...")
-                    fgsm_accuracy = test_model_fgsm(model, test_loader, device, epsilon)
+                    if dataset == "california_housing":
+                        fgsm_accuracy = test_model_fgsm_regression(model, test_loader, device, epsilon)
+                    else:
+                        fgsm_accuracy = test_model_fgsm(model, test_loader, device, epsilon)
                     writer.writerow([epsilon, fgsm_accuracy])

@@ -50,7 +50,9 @@ def test_model_fgsm(model, test_loader, device, epsilon):
         inputs_filtered = inputs[mask]
         targets_filtered = targets[mask]
 
-        data_fgsm = fgsm_attack(model, inputs_filtered, targets_filtered, epsilon)
+        criterion = nn.CrossEntropyLoss()
+        data_fgsm = get_fgsm_data(model, inputs_filtered, targets_filtered, epsilon, criterion)
+        data_fgsm = torch.clamp(data_fgsm, -1, 1)
 
         with torch.no_grad():
             outputs_fgsm = model(data_fgsm)
@@ -62,19 +64,44 @@ def test_model_fgsm(model, test_loader, device, epsilon):
     print(f'Accuracy FGSM: {accuracy_fgsm}%')
     return accuracy_fgsm
 
+def test_model_fgsm_regression(model, test_loader, device, epsilon):
+    X_test, y_test = test_loader
+    X_test_tensor = torch.tensor(X_test, dtype=torch.float32).to(device)
+    y_test_tensor = torch.tensor(y_test, dtype=torch.float32).to(device)
+    model.eval()
+    total_loss = 0.0
+    total_loss_fgsm = 0.0
+    criterion = nn.MSELoss()
 
-def fgsm_attack(model, images, labels, epsilon):
-    images = images.clone().detach().requires_grad_(True)
+    with torch.no_grad():
+        outputs = model(X_test_tensor)
+        loss = criterion(outputs, y_test_tensor)
+        total_loss += loss.item()
 
-    outputs = model(images)
-    loss = F.cross_entropy(outputs, labels)
+    criterion = nn.MSELoss()
+    data_fgsm = get_fgsm_data(model, X_test_tensor, y_test_tensor, epsilon, criterion)
+    data_fgsm = torch.clamp(data_fgsm, X_test_tensor.min(), X_test_tensor.max())
+
+    with torch.no_grad():
+        outputs_fgsm = model(data_fgsm)
+        loss_fgsm = criterion(outputs_fgsm, y_test_tensor)
+        total_loss_fgsm += loss_fgsm.item()
+
+    print(f"Test Loss: {total_loss:.6f}")
+    print(f"FGSM Loss: {total_loss:.6f}")
+    return total_loss_fgsm
+
+
+def get_fgsm_data(model, test_data, labels, epsilon, criterion):
+    test_data = test_data.clone().detach().requires_grad_(True)
+
+    outputs = model(test_data)
+    loss = criterion(outputs, labels)
 
     model.zero_grad()
     loss.backward()
 
-    data_grad = images.grad.data
-    perturbed_images = images + epsilon * data_grad.sign()
+    data_grad = test_data.grad.data
+    perturbed_data = test_data + epsilon * data_grad.sign()
 
-    perturbed_images = torch.clamp(perturbed_images, -1, 1)
-
-    return perturbed_images
+    return perturbed_data
