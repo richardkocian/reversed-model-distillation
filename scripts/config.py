@@ -4,4 +4,4 @@ EPOCHS_REGRESSION = 1500
 
 USE_CUDA = True  # Set to False to run on CPU.
 PIN_MEMORY = True # Recommended when using a GPU.
-PERSISTENT_WORKERS = True # Keeps DataLoader workers alive between epochs.
+PERSISTENT_WORKERS = False
