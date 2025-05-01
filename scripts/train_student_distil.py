@@ -6,6 +6,8 @@ import config
 import os
 import argparse
 import torch.nn.functional as F
+import gc
+import time
 
 from datasets.datasets import get_loaders
 from set_seed import set_seed
@@ -149,6 +151,10 @@ for run, seed in enumerate(seeds):
             accuracy = test_model_regression(student_model, test_loader, device)
 
             save_results(dataset, seed, outputs_path, switch_epoch, training_losses, accuracy, student_model)
+            del train_loader, test_loader
+            torch.cuda.empty_cache()
+            gc.collect()
+            time.sleep(0.1)
     else:
         switch_epochs = config.EPOCHS
         for switch_epoch in range(1, switch_epochs + 1):
@@ -163,5 +169,8 @@ for run, seed in enumerate(seeds):
             criterion = nn.CrossEntropyLoss()
             training_losses = train_student_distill(train_loader, student_model, teacher_model, student_optimizer, criterion, switch_epoch, alpha)
             accuracy = test_model(student_model, test_loader, device)
-
             save_results(dataset, seed, outputs_path, switch_epoch, training_losses, accuracy, student_model)
+            del train_loader, test_loader
+            torch.cuda.empty_cache()
+            gc.collect()
+            time.sleep(0.1)
