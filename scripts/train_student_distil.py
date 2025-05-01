@@ -8,10 +8,12 @@ import argparse
 import torch.nn.functional as F
 import gc
 import time
+import csv
 
 from datasets.datasets import get_loaders
+from scripts.test_model import test_model_fgsm_regression
 from set_seed import set_seed
-from test_model import test_model, test_model_regression
+from test_model import test_model, test_model_regression, test_model_fgsm
 from models.cifar import StudentModelCIFAR
 from models.fashion_mnist import StudentModelFashionMNIST
 from models.california_housing import StudentModelCALIFORNIA
@@ -26,9 +28,8 @@ def get_student_model(dataset):
     else:
         raise ValueError("Unknown combination of dataset and model")
 
-def save_results(dataset, seed, outputs_path, switch_epoch, training_losses, accuracy, student_model):
+def save_results(dataset, save_dir, training_losses, accuracy, student_model):
     decimal_places = 6 if dataset == "california_housing" else 2
-    save_dir = f"{outputs_path}/seed_{seed}/switch_epoch_{switch_epoch}"
     os.makedirs(save_dir, exist_ok=True)
     np.savetxt(f"{save_dir}/training_losses.txt", training_losses)
     np.savetxt(f"{save_dir}/accuracy.txt", [accuracy], fmt=f"%.{decimal_places}f")
@@ -149,8 +150,17 @@ for run, seed in enumerate(seeds):
             training_losses = train_student_distill_regression(train_loader, student_model, teacher_model, student_optimizer,
                                                     criterion, switch_epoch, alpha)
             accuracy = test_model_regression(student_model, test_loader, device)
+            save_dir = f"{outputs_path}/seed_{seed}/switch_epoch_{switch_epoch}"
+            save_results(dataset, save_dir, training_losses, accuracy, student_model)
 
-            save_results(dataset, seed, outputs_path, switch_epoch, training_losses, accuracy, student_model)
+            with open(os.path.join(save_dir, "fgsm_results.csv"), mode="w", newline="") as csvfile:
+                writer = csv.writer(csvfile)
+                writer.writerow(["epsilon", "accuracy"])
+
+                for epsilon in [0, 0.005, 0.01, 0.05]:
+                    print(f"Running FGSM test with epsilon: {epsilon}...")
+                    fgsm_accuracy = test_model_fgsm_regression(student_model, test_loader, device, epsilon)
+                    writer.writerow([epsilon, fgsm_accuracy])
             del train_loader, test_loader
             torch.cuda.empty_cache()
             gc.collect()
@@ -169,7 +179,18 @@ for run, seed in enumerate(seeds):
             criterion = nn.CrossEntropyLoss()
             training_losses = train_student_distill(train_loader, student_model, teacher_model, student_optimizer, criterion, switch_epoch, alpha)
             accuracy = test_model(student_model, test_loader, device)
-            save_results(dataset, seed, outputs_path, switch_epoch, training_losses, accuracy, student_model)
+            save_dir = f"{outputs_path}/seed_{seed}/switch_epoch_{switch_epoch}"
+            save_results(dataset, save_dir, training_losses, accuracy, student_model)
+
+            with open(os.path.join(save_dir, "fgsm_results.csv"), mode="w", newline="") as csvfile:
+                writer = csv.writer(csvfile)
+                writer.writerow(["epsilon", "accuracy"])
+
+                for epsilon in [0, 0.005, 0.01, 0.05]:
+                    print(f"Running FGSM test with epsilon: {epsilon}...")
+                    fgsm_accuracy = test_model_fgsm(student_model, test_loader, device, epsilon)
+                    writer.writerow([epsilon, fgsm_accuracy])
+
             del train_loader, test_loader
             torch.cuda.empty_cache()
             gc.collect()
