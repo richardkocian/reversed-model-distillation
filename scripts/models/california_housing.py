@@ -1,3 +1,11 @@
+# --------------------------------------------
+# File: california_housing.py
+# Description: Defines the architecture of California Housing models, including student and teacher models
+#              for use in experiments related to reversed model distillation.
+# Author: Richard Kocián
+# Created: 27.03.2025
+# --------------------------------------------
+
 import torch.nn as nn
 import torch.nn.functional as F
 

@@ -1,3 +1,11 @@
+# --------------------------------------------
+# File: train_student_distill.py
+# Description: Script for training models on datasets (CIFAR-10, Fashion-MNIST, California Housing)
+#              with reversed model distillation.
+# Author: Richard Kocián
+# Created: 18.03.2025
+# --------------------------------------------
+
 import numpy as np
 import torch
 import torch.optim as optim
@@ -18,6 +26,14 @@ from models.fashion_mnist import StudentModelFashionMNIST
 from models.california_housing import StudentModelCALIFORNIA
 
 def get_student_model(dataset):
+    """
+    Returns the appropriate student model based on the dataset.
+
+    :param dataset: str, the name of the dataset. Valid options are "cifar10", "fashion_mnist", and "california_housing".
+
+    :return: nn.Module, the corresponding teacher or student model instance.
+    :raises ValueError: If the combination of dataset and model type is not recognized.
+    """
     if dataset == "cifar10":
         return StudentModelCIFAR()
     elif dataset == "fashion_mnist":
@@ -27,44 +43,44 @@ def get_student_model(dataset):
     else:
         raise ValueError("Unknown combination of dataset and model")
 
-def save_results(dataset, save_dir, training_losses, accuracy, student_model):
+def save_results(dataset, save_dir, training_losses, accuracy, student_model, save_model):
+    """
+    Saves the training results, including losses, accuracy, and the trained model, to the specified directory.
+
+    :param dataset: str, the name of the dataset ("california_housing", "cifar10", "fashion_mnist").
+    :param save_dir: str, the directory where the results should be saved.
+    :param training_losses: list, the list of training losses recorded during model training.
+    :param accuracy: float, the accuracy of the trained model.
+    :param student_model: nn.Module, the trained student model to be saved.
+    :param save_model: bool, whether to save the trained model to disk. If True, the model is saved
+                       as `student_model.pth` in the `save_dir`.
+    """
     decimal_places = 6 if dataset == "california_housing" else 2
     os.makedirs(save_dir, exist_ok=True)
     np.savetxt(f"{save_dir}/training_losses.txt", training_losses)
     np.savetxt(f"{save_dir}/accuracy.txt", [accuracy], fmt=f"%.{decimal_places}f")
-    if args.save_model:
+    if save_model:
         torch.save(student_model, os.path.join(save_dir, f"student_model.pth"))
 
-parser = argparse.ArgumentParser(description="Train Student Model")
-parser.add_argument("--datasets-path", type=str, required=True, help="Path to the datasets folder")
-parser.add_argument("--teacher-path", type=str, required=True, help="Path to teacher model")
-parser.add_argument("--output", type=str, required=True, help="Path to the outputs folder")
-parser.add_argument("--batch-size", type=int, default=64, help="Batch size for training (default: 64)")
-parser.add_argument("--num-workers", type=int, default=10, help="Number of worker threads for data loading (default: 10)")
-parser.add_argument("--seeds-file", type=str, required=True, help="Path to the seeds list txt file")
-parser.add_argument("--alpha", type=float, default=0.6, help="Alpha parameter (default: 0.6)")
-parser.add_argument("--dataset", type=str, required=True, choices=["cifar10", "fashion_mnist", "california_housing"], help="Dataset")
-parser.add_argument("--save-model", action="store_true", help="Save trained models (.pth)")
+def train_student_distill_classification(train_loader, student_model, teacher_model, optimizer, criterion, switch_epoch, alpha):
+    """
+    Trains a classification model using reversed model distillation, combining both hard and soft losses
+    during the training process.
 
-args = parser.parse_args()
-datasets_path = args.datasets_path
-outputs_path = args.output
-batch_size = args.batch_size
-num_workers = args.num_workers
-teacher_path = args.teacher_path
-seeds_file = args.seeds_file
-alpha = args.alpha
-dataset = args.dataset
+    The training starts with distillation, where the student model learns from the teacher model (soft loss)
+    until the switch_epoch. After that, the model trains using only the hard loss (classification error).
 
-device = torch.device("cuda" if config.USE_CUDA and torch.cuda.is_available() else "cpu")
+    :param train_loader: DataLoader, the data loader for the training dataset.
+    :param student_model: nn.Module, the student model to be trained.
+    :param teacher_model: nn.Module, the teacher model providing soft targets for distillation.
+    :param optimizer: torch.optim.Optimizer, the optimizer used for updating the model parameters.
+    :param criterion: nn.Module, the loss function used for computing the model's error.
+    :param switch_epoch: int, epoch from which the training switches to using 100% hard loss (classification error).
+    :param alpha: float, the weight parameter for the distillation loss. During distillation,
+                  (100-alpha)% of the loss is soft (from teacher model), and alpha% is hard (from true labels).
 
-print(f"Using device: {device}")
-
-seeds = np.loadtxt(seeds_file, dtype=int).tolist()
-
-teacher_model = torch.load(teacher_path, weights_only=False)
-
-def train_student_distill(train_loader, student_model, teacher_model, optimizer, criterion, switch_epoch, alpha):
+    :return: list, the recorded training losses throughout the epochs.
+    """
     epochs = config.EPOCHS
     student_model.train()
     teacher_model.eval()
@@ -77,7 +93,6 @@ def train_student_distill(train_loader, student_model, teacher_model, optimizer,
             inputs, targets = inputs.to(device), targets.to(device)
             optimizer.zero_grad()
 
-            # Student outputs
             student_outputs = student_model(inputs)
 
             if epoch < switch_epoch:
@@ -102,9 +117,28 @@ def train_student_distill(train_loader, student_model, teacher_model, optimizer,
                 training_losses.append(running_loss / 100)
                 running_loss = 0.0
     return training_losses
-def train_student_distill_regression(train_loader, student_model, teacher_model, optimizer, criterion, switch_epoch, alpha):
+
+def train_student_distill_regression(train_data, student_model, teacher_model, optimizer, criterion, switch_epoch, alpha):
+    """
+    Trains a regression model using reversed model distillation, combining both hard and soft losses
+    during the training process.
+
+    The training starts with distillation, where the student model learns from the teacher model (soft loss)
+    until the switch_epoch. After that, the model trains using only the hard loss (regression error).
+
+    :param train_data: tuple, a tuple containing training data and labels ([X_train, y_train]).
+    :param student_model: nn.Module, the student model to be trained.
+    :param teacher_model: nn.Module, the teacher model providing soft targets for distillation.
+    :param optimizer: torch.optim.Optimizer, the optimizer used for updating the model parameters.
+    :param criterion: nn.Module, the loss function used for computing the model's error.
+    :param switch_epoch: int, epoch from which the training switches to using 100% hard loss (regression error).
+    :param alpha: float, the weight parameter for the distillation loss. During distillation,
+                  (100-alpha)% of the loss is soft (from teacher model), and alpha% is hard (from true labels).
+
+    :return: list, the recorded training losses throughout the epochs.
+    """
     epochs = config.EPOCHS_REGRESSION
-    X_train, y_train = train_loader
+    X_train, y_train = train_data
     X_train_tensor = torch.tensor(X_train, dtype=torch.float32).to(device)
     y_train_tensor = torch.tensor(y_train, dtype=torch.float32).to(device)
     student_model.train()
@@ -128,6 +162,38 @@ def train_student_distill_regression(train_loader, student_model, teacher_model,
         training_losses.append(loss.item())
     return training_losses
 
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Train Student Model")
+    parser.add_argument("--datasets-path", type=str, required=True, help="Path to the datasets folder")
+    parser.add_argument("--teacher-path", type=str, required=True, help="Path to teacher model")
+    parser.add_argument("--output", type=str, required=True, help="Path to the outputs folder")
+    parser.add_argument("--batch-size", type=int, default=64, help="Batch size for training (default: 64)")
+    parser.add_argument("--num-workers", type=int, default=10,
+                        help="Number of worker threads for data loading (default: 10)")
+    parser.add_argument("--seeds-file", type=str, required=True, help="Path to the seeds list txt file")
+    parser.add_argument("--alpha", type=float, default=0.6, help="Alpha parameter (default: 0.6)")
+    parser.add_argument("--dataset", type=str, required=True,
+                        choices=["cifar10", "fashion_mnist", "california_housing"], help="Dataset")
+    parser.add_argument("--save-model", action="store_true", help="Save trained models (.pth)")
+
+    args = parser.parse_args()
+    datasets_path = args.datasets_path
+    outputs_path = args.output
+    batch_size = args.batch_size
+    num_workers = args.num_workers
+    teacher_path = args.teacher_path
+    seeds_file = args.seeds_file
+    alpha = args.alpha
+    dataset = args.dataset
+    save_model = args.save_model
+
+    device = torch.device("cuda" if config.USE_CUDA and torch.cuda.is_available() else "cpu")
+    print(f"Using device: {device}")
+
+    seeds = np.loadtxt(seeds_file, dtype=int).tolist()
+
+    teacher_model = torch.load(teacher_path, weights_only=False)
+
 for run, seed in enumerate(seeds):
     print(f"Starting run {run + 1}/{len(seeds)} (seed: {seed})...")
     results = {}
@@ -150,7 +216,7 @@ for run, seed in enumerate(seeds):
                                                     criterion, switch_epoch, alpha)
             accuracy = test_model_regression(student_model, test_loader, device)
             save_dir = f"{outputs_path}/seed_{seed}/switch_epoch_{switch_epoch}"
-            save_results(dataset, save_dir, training_losses, accuracy, student_model)
+            save_results(dataset, save_dir, training_losses, accuracy, student_model, save_model)
 
             with open(os.path.join(save_dir, "fgsm_results.csv"), mode="w", newline="") as csvfile:
                 writer = csv.writer(csvfile)
@@ -176,10 +242,10 @@ for run, seed in enumerate(seeds):
             student_optimizer = optim.Adam(student_model.parameters(), lr=config.LEARNING_RATE)
 
             criterion = nn.CrossEntropyLoss()
-            training_losses = train_student_distill(train_loader, student_model, teacher_model, student_optimizer, criterion, switch_epoch, alpha)
+            training_losses = train_student_distill_classification(train_loader, student_model, teacher_model, student_optimizer, criterion, switch_epoch, alpha)
             accuracy = test_model_classification(student_model, test_loader, device)
             save_dir = f"{outputs_path}/seed_{seed}/switch_epoch_{switch_epoch}"
-            save_results(dataset, save_dir, training_losses, accuracy, student_model)
+            save_results(dataset, save_dir, training_losses, accuracy, student_model, save_model)
 
             with open(os.path.join(save_dir, "fgsm_results.csv"), mode="w", newline="") as csvfile:
                 writer = csv.writer(csvfile)

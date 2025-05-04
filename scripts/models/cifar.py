@@ -1,3 +1,11 @@
+# --------------------------------------------
+# File: cifar.py
+# Description: Defines the architecture of CIFAR-10 models, including student and teacher models
+#              for use in experiments related to reversed model distillation.
+# Author: Richard Kocián
+# Created: 18.03.2025
+# --------------------------------------------
+
 import torch.nn as nn
 import torch.nn.functional as F
 
