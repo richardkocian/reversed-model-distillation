@@ -10,7 +10,7 @@ import numpy as np
 import torch
 import torch.optim as optim
 import torch.nn as nn
-import config
+from configs import config
 import os
 import argparse
 import torch.nn.functional as F
@@ -18,9 +18,9 @@ import gc
 import time
 import csv
 
-from datasets.datasets import get_loaders
-from set_seed import set_seed
-from test_model import test_model_classification, test_model_regression, test_model_fgsm_classification, test_model_fgsm_regression
+from data.datasets import get_loaders
+from utils.set_seed import set_seed
+from utils.test_model import test_model_classification, test_model_regression, test_model_fgsm_classification, test_model_fgsm_regression
 from models.cifar import StudentModelCIFAR
 from models.fashion_mnist import StudentModelFashionMNIST
 from models.california_housing import StudentModelCALIFORNIA

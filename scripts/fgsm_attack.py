@@ -8,9 +8,9 @@
 
 import argparse
 import torch
-import config
-from test_model import test_model_fgsm_classification, test_model_fgsm_regression
-from datasets.datasets import get_loaders
+from configs import config
+from utils.test_model import test_model_fgsm_classification, test_model_fgsm_regression
+from data.datasets import get_loaders
 import os
 import csv
 
