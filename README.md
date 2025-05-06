@@ -6,6 +6,10 @@ This project investigates **reversed model distillation**, where a larger studen
 
 ## 📦 Installation
 
+#### Recommended environment:
+- Python version: 3.12.3 
+- Operating system: Linux (tested on Ubuntu 22.04)
+
 First, create a virtual environment and install the required dependencies:
 
 ```bash
