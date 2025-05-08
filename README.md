@@ -78,7 +78,7 @@ python3 train_student_distil.py \
 
 ## 📁 Directory Structure
 ```bash
-xkocia19/
+xkocia19_bachelor_thesis/
 ├── scripts/      # Python scripts related to training and evaluation of reversed model distillation
 │   ├── configs/  # Configuration files for experiments
 │   ├── data/     # Dataset definitions and data loading utilities
