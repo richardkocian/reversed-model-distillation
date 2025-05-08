@@ -87,7 +87,7 @@ xkocia19_bachelor_thesis/
 │   ├── train_model.py  # Script for standard model training (without distillation)
 │   ├── train_student_distil.py # Script for training models using reversed model distillation
 │   └── fgsm_attack.py  # Script for performing FGSM adversarial attacks
-├── outputs/      # Output files and logs from experiments runs
+├── outputs.zip      # Output files and logs from experiments runs
 ├── teacher_models/ # Best-performing teacher models (based on accuracy)
 ├── visualize_outputs/   # Jupyter notebooks for visualizing experiment results
 ├── graphs/       # Plots and graphs generated from experiment outputs
