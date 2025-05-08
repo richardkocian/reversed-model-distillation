@@ -64,10 +64,11 @@ python3 train_student_distil.py \
   --seeds-file configs/seeds.txt \
   --teacher-path ../teacher_models/teacher_model_small_best_cifar_10106.pth \
   --dataset cifar10 \
-  --datasets-path ../datasets
+  --datasets-path ../datasets \
+  --alpha 0.6
 ```
 
-- This command trains student models on CIFAR-10 using reversed model distillation from the specified teacher model.
+- This command trains student models on CIFAR-10 using reversed model distillation from the specified teacher model with alpha parameter set to 0.6 (60\% hard loss, 40\% 60 loss).
 
 - For each seed in configs/seeds.txt and for each switch epoch from 1 to epochs + 1 (as defined in configs/config.py), one student model is trained. This simulates distillation from the teacher for varying durations — from only the first epoch to the entire training. 
 - For each configuration, the following will be saved to the output directory:
@@ -86,7 +87,7 @@ xkocia19/
 │   ├── train_model.py  # Script for standard model training (without distillation)
 │   ├── train_student_distil.py # Script for training models using reversed model distillation
 │   └── fgsm_attack.py  # Script for performing FGSM adversarial attacks
-├── outputs/      # Output files and logs from experiment runs
+├── outputs/      # Output files and logs from experiments runs
 ├── teacher_models/ # Best-performing teacher models (based on accuracy)
 ├── visualize_outputs/   # Jupyter notebooks for visualizing experiment results
 ├── graphs/       # Plots and graphs generated from experiment outputs
