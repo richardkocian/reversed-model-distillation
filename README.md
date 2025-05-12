@@ -26,7 +26,7 @@ Before running any script, navigate to the `scripts/` directory and set the `PYT
 cd scripts
 export PYTHONPATH=.
 ```
-
+Another important step is to set up script parameters inside `scripts/configs/config.py`.
 ## 🧠 Training a Teacher Model
 ```bash
 python3 train_model.py -h
@@ -55,6 +55,8 @@ python3 train_model.py \
 python3 train_student_distil.py -h
 ```
 
+It is necessary to run this script on the same device (CPU/GPU) as the teacher model, which is specified via `--teacher-path`, was trained on. The device can be selected in `scripts/configs/config.py`.
+
 ### 💡 Example usage:
 ```bash
 python3 train_student_distil.py \
@@ -68,7 +70,7 @@ python3 train_student_distil.py \
   --alpha 0.6
 ```
 
-- This command trains student models on CIFAR-10 using reversed model distillation from the specified teacher model with alpha parameter set to 0.6 (60\% hard loss, 40\% 60 loss).
+- This command trains student models on CIFAR-10 using reversed model distillation from the specified teacher model with alpha parameter set to 0.6 (60\% hard loss, 40\% soft loss).
 
 - For each seed in configs/seeds.txt and for each switch epoch from 1 to epochs + 1 (as defined in configs/config.py), one student model is trained. This simulates distillation from the teacher for varying durations — from only the first epoch to the entire training. 
 - For each configuration, the following will be saved to the output directory:
@@ -88,7 +90,7 @@ xkocia19_bachelor_thesis/
 │   ├── train_student_distil.py # Script for training models using reversed model distillation
 │   └── fgsm_attack.py  # Script for performing FGSM adversarial attacks
 ├── outputs.zip      # Output files and logs from experiments runs
-├── teacher_models/ # Best-performing teacher models (based on accuracy)
+├── teacher_models/ # Best-performing teacher models (based on accuracy, trained on GPU with CUDA 12.8)
 ├── visualize_outputs/   # Jupyter notebooks for visualizing experiment results
 ├── graphs/       # Plots and graphs generated from experiment outputs
 ├── requirements.txt  # Python dependencies for running the project
