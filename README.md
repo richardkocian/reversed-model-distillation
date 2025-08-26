@@ -3,7 +3,8 @@
 This project investigates **reversed model distillation**, where a larger student model learns from a smaller teacher model. The codebase includes training and evaluation scripts, support for multiple seeds, and robustness evaluation using FGSM adversarial attacks.
 
 The experiments demonstrated improved accuracy and adversarial robustness on the CIFAR-10, Fashion-MNIST, and California Housing datasets.  
-See the full details in the [thesis document](Richard_Kocian_Bachelor_Thesis.pdf).
+*See the full details in the [thesis document](Richard_Kocian_Bachelor_Thesis.pdf).*
+
 ---
 
 ## 📦 Installation
