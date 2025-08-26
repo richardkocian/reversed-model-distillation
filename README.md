@@ -95,6 +95,6 @@ xkocia19_bachelor_thesis/
 ├── graphs/       # Plots and graphs generated from experiment outputs
 ├── requirements.txt  # Python dependencies for running the project
 ├── text/         # LaTeX source files of the thesis
-├── xkocia19_Weight_Initialization_in_Neural_Networks.pdf  # Final thesis document
+├── Richard_Kocian_Bachelor_Thesis.pdf  # Final thesis document
 └── README.md     # Project overview and setup instructions
 ```
