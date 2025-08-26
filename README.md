@@ -2,6 +2,8 @@
 
 This project investigates **reversed model distillation**, where a larger student model learns from a smaller teacher model. The codebase includes training and evaluation scripts, support for multiple seeds, and robustness evaluation using FGSM adversarial attacks.
 
+The experiments demonstrated improved accuracy and adversarial robustness on the CIFAR-10, Fashion-MNIST, and California Housing datasets.  
+See the full details in the [thesis document](Richard_Kocian_Bachelor_Thesis.pdf).
 ---
 
 ## 📦 Installation
@@ -81,20 +83,19 @@ python3 train_student_distil.py \
 ## 📁 Directory Structure
 ```bash
 xkocia19_bachelor_thesis/
+├── graphs/       # Plots and graphs generated from experiment outputs
+├── outputs      # Output files and logs from experiments runs
 ├── scripts/      # Python scripts related to training and evaluation of reversed model distillation
 │   ├── configs/  # Configuration files for experiments
 │   ├── data/     # Dataset definitions and data loading utilities
 │   ├── models/   # PyTorch model definitions
 │   ├── utils/    # Utility functions used across scripts
+│   ├── fgsm_attack.py  # Script for performing FGSM adversarial attacks
 │   ├── train_model.py  # Script for standard model training (without distillation)
-│   ├── train_student_distil.py # Script for training models using reversed model distillation
-│   └── fgsm_attack.py  # Script for performing FGSM adversarial attacks
-├── outputs.zip      # Output files and logs from experiments runs
+│   └── train_student_distil.py # Script for training models using reversed model distillation
 ├── teacher_models/ # Best-performing teacher models (based on accuracy, trained on GPU with CUDA 12.8)
 ├── visualize_outputs/   # Jupyter notebooks for visualizing experiment results
-├── graphs/       # Plots and graphs generated from experiment outputs
-├── requirements.txt  # Python dependencies for running the project
-├── text/         # LaTeX source files of the thesis
+├── README.md     # Project overview and setup instructions
 ├── Richard_Kocian_Bachelor_Thesis.pdf  # Final thesis document
-└── README.md     # Project overview and setup instructions
+└── requirements.txt  # Python dependencies for running the project
 ```
